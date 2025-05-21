@@ -36,14 +36,4 @@ export type { Theme, ThemeMode } from './types/theme';
 export * from './types/events';
 
 // Export themes
-export * from './themes';
-
-// Export demo components from demo directory
-export { AdapterDemo } from '../demo/AdapterDemo';
-export { InteractivityDemo } from '../demo/InteractivityDemo';
-export { MenuCustomizationDemo } from '../demo/MenuCustomizationDemo';
-export { DocumentNodeDemo } from '../demo/DocumentNodeDemo';
-export { LayoutDemo } from '../demo/LayoutDemo';
-export { NodeStylesDemo } from '../demo/NodeStylesDemo';
-export { UseCasesDemo } from '../demo/UsesCasesDemo';
-export { TestDocumentNodeDraggable } from '../demo/TestDocumentNodeDraggable'; 
+export * from './themes'; 

@@ -1,0 +1,39 @@
+# Source files
+src/
+demo/
+
+# Development files
+.github/
+.vscode/
+.editorconfig
+.eslintrc
+.gitignore
+.prettierrc
+*.tgz
+
+# Config files
+vite.config.ts
+tsconfig.json
+tsconfig.node.json
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+vitest.config.ts
+
+# Logs
+logs/
+*.log
+
+# Documentation
+docs/
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+
+# Editor specific files
+.idea/
+.vscode/ 
