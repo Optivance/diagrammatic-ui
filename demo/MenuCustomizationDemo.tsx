@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Graph, NodeMenuItem } from '../src';
-import { FileText, Star, Copy, ExternalLink, Trash2, Info, Settings, EyeOff } from 'lucide-react';
+import { Star, Copy, ExternalLink, Trash2, Info, Settings, EyeOff } from 'lucide-react';
 
 // Sample data for the demo
 const sampleData = {

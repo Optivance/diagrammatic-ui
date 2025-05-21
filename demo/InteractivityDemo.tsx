@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Graph, 
   GraphData,
-  InteractionOptions,
-  CanvasEvent
+  InteractionOptions
 } from '../src';
 
 // Sample graph data
@@ -79,10 +78,6 @@ export const InteractivityDemo: React.FC = () => {
     addLogEntry(`Edge clicked: ${sourceId} → ${targetId}`);
   };
   
-  const handleCanvasClick = (event: CanvasEvent) => {
-    addLogEntry(`Canvas clicked at (${event.position.x.toFixed(0)}, ${event.position.y.toFixed(0)})`);
-  };
-  
   const handleDragStart = (nodeIds: string[]) => {
     addLogEntry(`Started dragging ${nodeIds.length} node(s)`);
   };
@@ -101,7 +96,7 @@ export const InteractivityDemo: React.FC = () => {
   
   // Toggle interaction features
   const toggleFeature = (feature: keyof InteractionOptions) => {
-    setInteractionOptions(prev => ({
+    setInteractionOptions((prev: InteractionOptions) => ({
       ...prev,
       [feature]: !prev[feature]
     }));

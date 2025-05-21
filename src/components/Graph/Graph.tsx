@@ -86,6 +86,7 @@ export const Graph: React.FC<GraphProps> = ({
   onNodeClick: externalNodeClickHandler,
   onEdgeClick: externalEdgeClickHandler,
   onViewportChange,
+  // These handlers are part of the public API but not used in this implementation
   onNodeMouseEnter,
   onNodeMouseLeave,
   onSelectionChange,
@@ -103,13 +104,14 @@ export const Graph: React.FC<GraphProps> = ({
     draggingEnabled = true,
     zoomEnabled = true,
     panningEnabled = true,
+    // These options are part of the public API but not used in this implementation
     selectionEnabled = true,
     multiSelectionEnabled = false,
     minZoom = 0.1,
     maxZoom = 5,
     fitViewOnInit = true
   } = interactionOptions;
-
+  
   // Validate and process the data
   const processedData = React.useMemo(() => {
     if (!data || !data.nodes || !Array.isArray(data.nodes)) {

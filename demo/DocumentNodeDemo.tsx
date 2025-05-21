@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Graph, GraphData } from '../src';
 import { LayoutType } from '../src/layouts';
 

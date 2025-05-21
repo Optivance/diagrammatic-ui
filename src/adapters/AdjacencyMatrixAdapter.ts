@@ -30,7 +30,7 @@ export class AdjacencyMatrixAdapter implements DataAdapter<AdjacencyMatrixData> 
     }
 
     // Convert nodes
-    const nodes: Node[] = data.nodes.map((id, index) => {
+    const nodes: Node[] = data.nodes.map((id) => {
       // Get node attributes if they exist
       const nodeAttrs = data.nodeAttributes ? 
         (data.nodeAttributes[id as keyof typeof data.nodeAttributes] as Record<string, unknown> | undefined) : 

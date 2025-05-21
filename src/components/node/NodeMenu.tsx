@@ -1,7 +1,5 @@
 import React from 'react';
 import { Node, NodeMenuItem } from '../../types/graph';
-// Import Lucide React icons for default icons (if needed)
-import { Info, Star, Copy, ExternalLink, Trash2, Settings, EyeOff } from 'lucide-react';
 
 interface NodeMenuProps {
   /** The node this menu applies to */

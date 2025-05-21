@@ -40,7 +40,7 @@ function App() {
       minHeight: '100vh',
       color: theme === 'dark' ? '#f8fafc' : '#1e293b'
     }}>
-      <h1>React Graph Viz Demo</h1>
+      <h1>Diagrammatic UI Demo</h1>
       
       <div style={{ margin: '1rem 0', display: 'flex', gap: '1rem' }}>
         <button 

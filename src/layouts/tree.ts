@@ -148,9 +148,6 @@ export function treeLayout(
   // Calculate max nodes in any level
   const maxNodesInLevel = Math.max(...Object.values(levelCounts));
   
-  // Calculate total number of levels
-  const maxLevel = Math.max(...Object.values(levels));
-  
   // Calculate positions based on direction
   const positions: Record<string, Position> = {};
   const isHorizontal = direction === 'left-right' || direction === 'right-left';

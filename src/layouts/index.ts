@@ -54,7 +54,7 @@ export const layouts: Record<LayoutType, LayoutFunction> = {
   force: (nodes, edges, width, height, options) => 
     forceLayout(nodes, edges, width, height, options as ForceLayoutOptions),
   
-  circular: (nodes, edges, width, height, options) => 
+  circular: (nodes, _edges, width, height, options) => 
     circularLayout(nodes, width, height, options as CircularLayoutOptions),
   
   tree: (nodes, edges, width, height, options) => 
@@ -63,10 +63,10 @@ export const layouts: Record<LayoutType, LayoutFunction> = {
   spiral: (nodes, edges, width, height, options) => 
     radialLayout(nodes, edges, width, height, options as RadialLayoutOptions),
   
-  donut: (nodes, edges, width, height, options) => 
+  donut: (nodes, _edges, width, height, options) => 
     circularLayout(nodes, width, height, { ...options as CircularLayoutOptions, isDonut: true }),
   
-  grid: (nodes, edges, width, height, options) => 
+  grid: (nodes, _edges, width, height, options) => 
     gridLayout(nodes, width, height, options as GridLayoutOptions),
 
   radial: (nodes, edges, width, height, options) =>

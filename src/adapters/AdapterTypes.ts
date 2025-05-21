@@ -2,7 +2,7 @@
  * Data Adapter Types and Interfaces
  * These types define the contract for data adapters in the library
  */
-import { GraphData, Node, Edge } from '../types/graph';
+import { GraphData } from '../types/graph';
 
 /**
  * Base interface for data adapters

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Edge, Node } from '../../types/graph';
 
 export interface GraphEdgesProps {
@@ -83,10 +83,6 @@ export const GraphEdges: React.FC<GraphEdgesProps> = ({
         
         // Skip rendering if nodes are in the same position
         if (distance === 0) return null;
-        
-        // Calculate normalized direction vector
-        const nx = dx / distance;
-        const ny = dy / distance;
         
         // Get node sizes (width and height)
         const sourceSize = nodeSizes[edge.source] || { 

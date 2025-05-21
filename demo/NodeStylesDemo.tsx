@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Graph, NodeStyle } from '../src';
 
 // Re-use the same data from the document demo
