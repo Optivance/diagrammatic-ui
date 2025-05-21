@@ -7,13 +7,7 @@ import {
   Edge 
 } from '../types/graph';
 import {
-  GraphEventHandlers,
-  NodeEvent,
-  EdgeEvent,
-  CanvasEvent,
-  SelectionEvent,
-  DragEvent,
-  ViewportEvent
+  GraphEventHandlers
 } from '../types/events';
 
 /**
@@ -367,13 +361,61 @@ export class InteractionController {
     this.isDragging = true;
     this.dragStartPosition = position;
     
+    // Get the target node element that triggered the drag
+    let targetNodeId: string | null = null;
+    if (event) {
+      // Try to find the node that was clicked from the event path
+      const path = event.nativeEvent.composedPath();
+      for (let i = 0; i < path.length; i++) {
+        const el = path[i] as HTMLElement;
+        if (el.hasAttribute && el.hasAttribute('data-node-id')) {
+          targetNodeId = el.getAttribute('data-node-id');
+          break;
+        }
+      }
+    }
+    
     // Determine dragged nodes (selected nodes or nodes under cursor)
-    this.draggedNodes = this.graphData.nodes.filter(node => 
-      this.selectionState.selectedNodeIds.has(node.id)
-    );
+    this.draggedNodes = this.graphData.nodes.filter(node => {
+      // If we have a specific target node, only drag that one
+      if (targetNodeId) {
+        return node.id === targetNodeId;
+      }
+      // Otherwise, drag all selected nodes
+      return this.selectionState.selectedNodeIds.has(node.id);
+    });
+    
+    // If no nodes were found, try using event target or position to find a node
+    if (this.draggedNodes.length === 0 && event) {
+      // Find the closest node to the click position
+      let closestNode = null;
+      let closestDistance = Infinity;
+      
+      for (const node of this.graphData.nodes) {
+        // Get node position from its data or default to 0,0
+        const nodeX = (node.data?.x as number) || 0;
+        const nodeY = (node.data?.y as number) || 0;
+        
+        // Calculate distance from click to node center
+        const dx = position.x - nodeX;
+        const dy = position.y - nodeY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Update closest node if this one is closer
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestNode = node;
+        }
+      }
+      
+      // If we found a node within a reasonable distance, add it to draggedNodes
+      if (closestNode && closestDistance < 50) {
+        this.draggedNodes = [closestNode];
+      }
+    }
     
     // Trigger drag start event
-    if (this.eventHandlers.onDragStart) {
+    if (this.eventHandlers.onDragStart && this.draggedNodes.length > 0) {
       this.eventHandlers.onDragStart({
         startPosition: position,
         currentPosition: position,

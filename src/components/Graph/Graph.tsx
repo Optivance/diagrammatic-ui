@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GraphData, Node as GraphNode, Edge, Position, NodeMenuConfig } from '../../types/graph';
+import { GraphData, Node as GraphNode, Edge, Position, NodeMenuConfig, NodeStyleConfig } from '../../types/graph';
 import { GraphEdges } from '../edge/GraphEdges';
-import { GraphNode as GraphNodeComponent } from '../node/GraphNode';
+import { NodeRenderer } from '../node/NodeRenderer';
 import { GraphDefs } from './GraphDefs';
 import { GraphControls } from './GraphControls';
 import { LayoutType } from '../../layouts';
@@ -47,6 +47,8 @@ export interface GraphProps {
   interactionOptions?: InteractionOptions;
   /** Configuration for node menus (context and dropdown) */
   nodeMenuConfig?: NodeMenuConfig;
+  /** Configuration for node styling */
+  nodeStyleConfig?: NodeStyleConfig;
   /** Callback when a node is clicked */
   onNodeClick?: (nodeId: string) => void;
   /** Callback when an edge is clicked */
@@ -80,6 +82,7 @@ export const Graph: React.FC<GraphProps> = ({
   theme = 'light',
   interactionOptions = {},
   nodeMenuConfig = {},
+  nodeStyleConfig = {},
   onNodeClick: externalNodeClickHandler,
   onEdgeClick: externalEdgeClickHandler,
   onViewportChange,
@@ -136,6 +139,9 @@ export const Graph: React.FC<GraphProps> = ({
   
   // Track previous layout type to detect changes
   const prevLayoutTypeRef = useRef(autoLayout);
+
+  // Track active node dragging to prevent graph panning during node dragging
+  const [draggingNode, setDraggingNode] = useState<string | null>(null);
 
   // Reset initialization state when layout type changes
   useEffect(() => {
@@ -242,6 +248,11 @@ export const Graph: React.FC<GraphProps> = ({
   const handleNodePositionChange = useCallback((id: string, position: Position) => {
     if (!draggingEnabled) return;
 
+    // Set dragging node ID when position changes
+    if (!draggingNode) {
+      setDraggingNode(id);
+    }
+
     setNodePositions(prev => ({
       ...prev,
       [id]: position
@@ -250,13 +261,41 @@ export const Graph: React.FC<GraphProps> = ({
     if (onDrag) {
       onDrag([id], position);
     }
-  }, [draggingEnabled, onDrag]);
+  }, [draggingEnabled, onDrag, draggingNode]);
+
+  // Track when node drag ends
+  useEffect(() => {
+    // If not dragging, listen for drag end
+    if (draggingNode) {
+      const handleMouseUp = () => {
+        // Add a small delay before clearing draggingNode to prevent premature size recalculation
+        setTimeout(() => {
+          setDraggingNode(null);
+        
+          if (onDragEnd) {
+            onDragEnd([draggingNode]);
+          }
+        }, 100);
+        
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+      
+      window.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [draggingNode, onDragEnd]);
 
   // Add node size change handler
   const handleNodeSizeChange = useCallback((
     id: string,
     size: { width: number; height: number }
   ) => {
+    // Skip size updates for nodes that are currently being dragged
+    if (draggingNode === id) return;
+    
     // Use a ref to avoid triggering re-renders for minor size changes
     setNodeSizes(prev => {
       // Skip update if the change is too small
@@ -273,7 +312,7 @@ export const Graph: React.FC<GraphProps> = ({
         [id]: size
       };
     });
-  }, []);
+  }, [draggingNode]);
 
   // Add wheel event listener with non-passive option for zoom
   useEffect(() => {
@@ -374,7 +413,8 @@ export const Graph: React.FC<GraphProps> = ({
 
   // Pan handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!panningEnabled || e.button !== 0) return; // Only left mouse button
+    // Don't start panning if we're dragging a node
+    if (!panningEnabled || e.button !== 0 || draggingNode) return; 
     
     const target = e.target as Element;
     if (target.tagName === 'svg' || target === transformGroupRef.current) {
@@ -382,7 +422,7 @@ export const Graph: React.FC<GraphProps> = ({
       setPanStart({ x: e.clientX, y: e.clientY });
       document.body.style.cursor = 'grabbing';
     }
-  }, [panningEnabled]);
+  }, [panningEnabled, draggingNode]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isPanning) return;
@@ -496,7 +536,7 @@ export const Graph: React.FC<GraphProps> = ({
             nodeSizes={nodeSizes}
           />
           {processedData.nodes.map(node => (
-            <GraphNodeComponent
+            <NodeRenderer
               key={node.id}
               node={node}
               position={nodePositions[node.id] || { x: 0, y: 0 }}
@@ -517,6 +557,12 @@ export const Graph: React.FC<GraphProps> = ({
               menuItems={nodeMenuConfig.items}
               showDropdownMenu={nodeMenuConfig.showDropdownMenu !== false}
               enableContextMenu={nodeMenuConfig.enableContextMenu !== false}
+              nodeStyle={data.nodeStyleConfig?.type || nodeStyleConfig.type}
+              customRenderer={data.nodeStyleConfig?.renderer || nodeStyleConfig.renderer}
+              styleConfig={{
+                ...nodeStyleConfig,
+                ...data.nodeStyleConfig
+              }}
             />
           ))}
         </g>

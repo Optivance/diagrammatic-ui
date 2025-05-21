@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Node, NodeMenuItem } from '../../types/graph';
+import { Node, NodeMenuItem, NodeStyleConfig } from '../../types/graph';
 import { useDragHandler } from '../../hooks/useDragHandler';
 import { getNodeStyle, getNodeTypeColor } from '../../utils/graph/nodeStyles';
 import SimpleNodeMenu from './SimpleNodeMenu';
@@ -44,6 +44,8 @@ export interface GraphNodeProps {
   showDropdownMenu?: boolean;
   /** Whether to enable the context menu */
   enableContextMenu?: boolean;
+  /** Style configuration */
+  styleConfig?: NodeStyleConfig;
 }
 
 /**
@@ -69,7 +71,19 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
   menuItems = [],
   showDropdownMenu = true,
   enableContextMenu = true,
+  styleConfig,
 }) => {
+  // Use the drag handler hook - moved up to avoid "used before declaration" errors
+  const { isDragging, startDrag, updateCurrentPosition } = useDragHandler(
+    isInteractive,
+    zoomScale,
+    onPositionChange,
+    node.id
+  );
+  
+  // Track when dragging starts/ends to prevent size changes
+  const wasDraggingRef = useRef(false);
+  
   // State
   const [showMenu, setShowMenu] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -77,20 +91,66 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
   const [nodeHeight, setNodeHeight] = useState(100);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [sizeLocked, setSizeLocked] = useState(false);
   
   // Refs
   const nodeRef = useRef<SVGGElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastValidPositionRef = useRef(position);
   const previousSizeRef = useRef({ width: nodeWidth, height: nodeHeight });
+  const dragStateRef = useRef(false);
+  
+  // Update drag state ref to prevent race conditions and lock size during dragging
+  useEffect(() => {
+    dragStateRef.current = isDragging;
+    
+    // Handle drag start
+    if (isDragging && !sizeLocked) {
+      setSizeLocked(true);
+      wasDraggingRef.current = true;
+    } 
+    // Handle drag end with a delay to ensure stability
+    else if (!isDragging && sizeLocked && wasDraggingRef.current) {
+      // Keep size locked for longer after drag ends to avoid flickering
+      const timeout = setTimeout(() => {
+        // Only unlock after we're sure no resize events are pending
+        setSizeLocked(false);
+      }, 500); // Increased timeout for better stability
+      return () => clearTimeout(timeout);
+    }
+  }, [isDragging, sizeLocked]);
+  
+  // When the drag is complete, stabilize the size
+  useEffect(() => {
+    if (wasDraggingRef.current && !isDragging) {
+      // Preserve current size after drag ends
+      if (contentRef.current) {
+        previousSizeRef.current = { width: nodeWidth, height: nodeHeight };
+        
+        // Apply a short additional delay before allowing any size recalculation
+        const stabilizeTimer = setTimeout(() => {
+          wasDraggingRef.current = false;
+        }, 300);
+        
+        return () => clearTimeout(stabilizeTimer);
+      }
+    }
+  }, [isDragging, nodeWidth, nodeHeight]);
   
   // Update last valid position when position prop changes
   useEffect(() => {
-    lastValidPositionRef.current = position;
-  }, [position]);
+    if (!dragStateRef.current) {
+      lastValidPositionRef.current = position;
+      updateCurrentPosition(position);
+    }
+  }, [position, updateCurrentPosition]);
   
   // Calculate content size and update node dimensions
   const updateNodeSize = useCallback(() => {
+    // Skip size updates during or immediately after dragging
+    if (isDragging || sizeLocked || wasDraggingRef.current) return;
+    
     if (!contentRef.current) return;
     
     // Get the actual content size
@@ -130,6 +190,19 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
       baseWidth = Math.max(baseWidth, 120 + Math.min(nameLength * 3, 60));
     }
     
+    // Give more space for nodes with sections or description
+    if (node.sections && node.sections.length > 0) {
+      // Add height for sections
+      baseHeight += Math.min(node.sections.length * 10, 50);
+      baseWidth = Math.max(baseWidth, 140); // Wider to fit section text
+    }
+    
+    if (node.description) {
+      // Add height for description
+      const descLength = node.description.length;
+      baseHeight += Math.min(15 + descLength / 20, 40); // Scale with description length
+    }
+    
     // Simple content-aware sizing with constraints
     // Give more weight to the horizontal content size
     const contentBasedWidth = Math.min(
@@ -156,10 +229,13 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
       setNodeWidth(finalWidth);
       setNodeHeight(finalHeight);
     }
-  }, [minNodeSize, maxNodeSize, sizeScale, nodeWidth, nodeHeight, node]);
+  }, [minNodeSize, maxNodeSize, sizeScale, nodeWidth, nodeHeight, node, totalNodesInView, isDragging, sizeLocked]);
   
   // Update size when node content changes or on initial render
   useEffect(() => {
+    // Don't update the size while dragging to prevent visual glitches
+    if (isDragging || sizeLocked) return;
+    
     // Set a timeout to avoid rapid successive updates
     const timeoutId = setTimeout(() => {
       updateNodeSize();
@@ -168,6 +244,8 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
     // Add resize observer to handle dynamic content changes
     if (contentRef.current) {
       const resizeObserver = new ResizeObserver(() => {
+        // Don't process resize events during drag to prevent visual glitches
+        if (isDragging || sizeLocked) return;
         updateNodeSize();
       });
       resizeObserver.observe(contentRef.current);
@@ -178,10 +256,13 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
     }
     
     return () => clearTimeout(timeoutId);
-  }, [updateNodeSize]);
+  }, [updateNodeSize, isDragging, sizeLocked]);
   
   // Report size changes to parent, but only when they've changed significantly
   useEffect(() => {
+    // Don't report size changes during drag to prevent visual glitches
+    if (isDragging || sizeLocked) return;
+    
     if (onSizeChange && 
         (Math.abs(previousSizeRef.current.width - nodeWidth) > 5 || 
          Math.abs(previousSizeRef.current.height - nodeHeight) > 5)) {
@@ -189,15 +270,7 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
       previousSizeRef.current = newSize;
       onSizeChange(newSize);
     }
-  }, [nodeWidth, nodeHeight, onSizeChange]);
-  
-  // Use the drag handler hook
-  const { isDragging, startDrag } = useDragHandler(
-    isInteractive,
-    zoomScale,
-    onPositionChange,
-    node.id
-  );
+  }, [nodeWidth, nodeHeight, onSizeChange, isDragging, sizeLocked]);
 
   // Handle node click (when not dragging)
   const handleNodeClick = (e: React.MouseEvent) => {
@@ -215,7 +288,7 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
 
     e.preventDefault();
     e.stopPropagation();
-    startDrag(e, position);
+    startDrag(e, lastValidPositionRef.current);
   };
 
   // Menu toggle handler
@@ -277,24 +350,23 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
     setShowContextMenu(true);
   };
 
-  // Format display values
+  // Format display value for rendering
   const displayName = node.name || node.title || `Node ${node.id}`;
-  const displayType = node.type || 'unknown';
-  const displayPath = node.filepath || node.metadata?.filePath || node.metadata?.path || '';
-  
-  // Get node complexity for size calculation
-  const nodeComplexity = node.sections?.length || 0;
-  const hasDescription = Boolean(node.description || node.metadata?.description);
-  
-  // Calculate style based on node state
-  const nodeStyles = getNodeStyle(displayType, theme);
+  const description = node.description || '';
+  const path = node.path || '';
+  const typeName = node.type?.toUpperCase() || 'NODE';
+  const nodeType = node.type || 'default';
+
+  // Get node type styles (consider styleConfig if present)
+  const nodeTypeColor = (styleConfig?.typeStyles?.[nodeType]?.color || 
+                        getNodeTypeColor(nodeType, theme)) as string;
+  const nodeStyle = getNodeStyle(nodeType, theme);
   
   // State-based style modifiers
   const highlightStyles = isHighlighted 
     ? {
         outline: `4px solid ${theme === 'dark' ? 'rgba(59, 130, 246, 0.7)' : 'rgba(59, 130, 246, 1)'}`,
         zIndex: 10,
-        transform: 'scale(1.05)',
       }
     : isPathHighlighted 
       ? {
@@ -347,6 +419,73 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
     return items;
   }, [onNodeClick, onShowDependencies, onShowDependents]);
 
+  // Prevent wheel events from propagating to the canvas (which would zoom)
+  // And provide a coordinated drag and scroll behavior
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Get scroll properties
+      const container = scrollContainer;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      
+      // Check if scrolling is possible in the direction we're scrolling
+      const canScrollUp = scrollTop > 0;
+      const canScrollDown = scrollTop < scrollHeight - clientHeight;
+      
+      // If we're trying to scroll up and there's room to scroll, or
+      // we're trying to scroll down and there's room to scroll
+      if ((e.deltaY < 0 && canScrollUp) || (e.deltaY > 0 && canScrollDown)) {
+        // Stop propagation to prevent parent (canvas) from zooming
+        e.stopPropagation();
+        
+        // Only prevent default if we're actually handling the scroll
+        // This allows scrolling to propagate when we reach the top/bottom
+        e.preventDefault();
+        
+        // Manual scroll adjustment
+        container.scrollTop += e.deltaY;
+      }
+    };
+
+    // Handle mouse down to allow dragging from the scrollable area
+    const handleScrollContainerMouseDown = (e: MouseEvent) => {
+      // Only handle left mouse button
+      if (e.button !== 0 || !isInteractive) return;
+      
+      // Prevent starting drag when clicking on interactive elements
+      if ((e.target as HTMLElement).closest('.node-menu-btn')) return;
+      
+      // Allow the event to propagate for drag handling
+      // But prevent text selection during drag
+      e.preventDefault();
+      
+      // Start the drag operation directly
+      // Convert MouseEvent to React.MouseEvent type that startDrag expects
+      // This is a workaround as we can't directly pass a native MouseEvent
+      const syntheticEvent = {
+        button: e.button,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        preventDefault: () => e.preventDefault(),
+        stopPropagation: () => e.stopPropagation(),
+        target: e.target,
+        currentTarget: e.currentTarget,
+      } as unknown as React.MouseEvent;
+      
+      startDrag(syntheticEvent, lastValidPositionRef.current);
+    };
+
+    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
+    scrollContainer.addEventListener('mousedown', handleScrollContainerMouseDown);
+    
+    return () => {
+      scrollContainer.removeEventListener('wheel', handleWheel);
+      scrollContainer.removeEventListener('mousedown', handleScrollContainerMouseDown);
+    };
+  }, [isInteractive, startDrag]);
+
   return (
     <g
       ref={nodeRef}
@@ -371,17 +510,26 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
           style={{
             width: '100%',
             height: '100%',
-            transform: isHighlighted ? 'scale(1.05)' : undefined,
+      
             userSelect: 'none',
             touchAction: 'none',
             padding: '8px',
             boxSizing: 'border-box',
-            ...nodeStyles,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            ...nodeStyle,
             ...highlightStyles,
             ...dragStyles,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Header row with title and menu */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            flexShrink: 0
+          }}>
             <div style={{ 
               display: 'flex', 
               alignItems: 'center',
@@ -396,7 +544,7 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
                 width: '8px', 
                 height: '8px', 
                 borderRadius: '50%', 
-                backgroundColor: getNodeTypeColor(displayType),
+                backgroundColor: nodeTypeColor,
                 flexShrink: 0,
               }} />
               <span style={{ 
@@ -434,6 +582,7 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
                   }}
                   onClick={handleMenuToggle}
                   aria-label="Node options"
+                  className="node-menu-btn"
                   onMouseOver={(e) => {
                     e.currentTarget.style.backgroundColor = theme === 'dark' 
                       ? 'rgba(255, 255, 255, 0.2)' 
@@ -455,7 +604,8 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
             </div>
           </div>
           
-          {displayPath && (
+          {/* Path info (static) */}
+          {path && (
             <div style={{ 
               fontSize: '9px', 
               opacity: 0.7, 
@@ -463,32 +613,20 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              maxWidth: '100%'
+              maxWidth: '100%',
+              flexShrink: 0
             }}>
-              {displayPath}
+              {path}
             </div>
           )}
           
-          {node.description && (
-            <div style={{
-              fontSize: '10px',
-              marginTop: '4px',
-              opacity: 0.85,
-              maxHeight: '40px',
-              overflow: 'hidden',
-              display: nodeWidth > 100 ? 'block' : 'none',
-              wordWrap: 'break-word',
-              whiteSpace: 'normal' 
-            }}>
-              {node.description}
-            </div>
-          )}
-          
+          {/* Type tag (static) */}
           <div style={{ 
             display: 'flex',
             flexWrap: 'wrap',
             gap: '2px',
-            marginTop: '4px'
+            marginTop: '4px',
+            flexShrink: 0
           }}>
             <div style={{ 
               display: 'inline-block',
@@ -500,7 +638,7 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
               borderRadius: '3px',
               flexShrink: 0
             }}>
-              {displayType}
+              {typeName}
             </div>
             
             {node.sections && node.sections.length > 0 && (
@@ -518,27 +656,59 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
               </div>
             )}
           </div>
-          
-          {node.sections && node.sections.length > 0 && nodeWidth > 120 && (
-            <div style={{ marginTop: '4px', fontSize: '9px' }}>
-              <ul style={{ 
-                margin: '1px 0 0 0', 
-                padding: '0 0 0 12px',
-                maxHeight: '32px',
-                overflow: 'hidden'
-              }}>
-                {node.sections.slice(0, 2).map(section => (
-                  <li key={section.id}>
-                    {section.name}: {section.items.length}
-                  </li>
-                ))}
-                {node.sections.length > 2 && (
-                  <li>...and {node.sections.length - 2} more</li>
-                )}
-              </ul>
-            </div>
-          )}
 
+          {/* Scrollable content area */}
+          <div
+            ref={scrollContainerRef}
+            style={{ 
+              flex: '1 1 auto',
+              overflow: 'auto',
+              marginTop: '4px',
+              minHeight: '40px', // Ensure there's always visible content
+              maxHeight: '150px', // Cap maximum height for large content
+              scrollbarWidth: 'none', // Hide scrollbar in Firefox
+              msOverflowStyle: 'none', // Hide scrollbar in IE/Edge
+            }}
+            className="hide-scrollbar" // Class for hiding WebKit scrollbars
+          >
+            <style>
+              {`
+                .hide-scrollbar::-webkit-scrollbar {
+                  display: none;
+                }
+              `}
+            </style>
+            
+            {/* Description (scrollable) */}
+            {description && (
+              <div style={{
+                fontSize: '10px',
+                opacity: 0.85,
+                wordWrap: 'break-word',
+                whiteSpace: 'normal',
+                marginBottom: '4px'
+              }}>
+                {description}
+              </div>
+            )}
+            
+            {/* Section content (scrollable) */}
+            {node.sections && node.sections.length > 0 && nodeWidth > 120 && (
+              <div style={{ fontSize: '9px' }}>
+                <ul style={{ 
+                  margin: '1px 0 0 0', 
+                  padding: '0 0 0 12px',
+                }}>
+                  {node.sections.map(section => (
+                    <li key={section.id}>
+                      {section.name}: {section.items.length}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          
           {/* Menu - single instance for both dropdown and context */}
           <div style={{ position: 'absolute', top: 0, left: 0, zIndex: 1000 }}>
             <SimpleNodeMenu
@@ -575,9 +745,9 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
               minWidth: '200px',
             }}>
               <div style={{ fontWeight: 600, marginBottom: '4px' }}>{displayName}</div>
-              <div style={{ fontSize: '12px', opacity: 0.8 }}>Type: {displayType}</div>
-              {displayPath && (
-                <div style={{ fontSize: '12px', opacity: 0.8 }}>Path: {displayPath}</div>
+              <div style={{ fontSize: '12px', opacity: 0.8 }}>Type: {typeName}</div>
+              {path && (
+                <div style={{ fontSize: '12px', opacity: 0.8 }}>Path: {path}</div>
               )}
               {node.sections && node.sections.length > 0 && (
                 <div style={{ marginTop: '4px', fontSize: '12px' }}>
@@ -588,14 +758,11 @@ export const GraphNode: React.FC<GraphNodeProps> = ({
                     maxHeight: '60px',
                     overflow: 'hidden'
                   }}>
-                    {node.sections.slice(0, 2).map(section => (
+                    {node.sections.map(section => (
                       <li key={section.id}>
                         {section.name}: {section.items.length} items
                       </li>
                     ))}
-                    {node.sections.length > 2 && (
-                      <li>...and {node.sections.length - 2} more sections</li>
-                    )}
                   </ul>
                 </div>
               )}

@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { Graph, GraphData, InteractivityDemo, MenuCustomizationDemo } from '../src';
+import { LayoutDemo } from './LayoutDemo';
+import { DocumentNodeDemo } from './DocumentNodeDemo';
+import { NodeStylesDemo } from './NodeStylesDemo';
+import { UseCasesDemo } from './UsesCasesDemo';
+import { TestDocumentNodeDraggable } from './TestDocumentNodeDraggable';
 
 // Sample data for demonstration
 const sampleData: GraphData = {
@@ -25,6 +30,7 @@ type Layout = typeof layouts[number];
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [layout, setLayout] = useState<Layout>('circular');
+  const [activeDemo, setActiveDemo] = useState<string>('basic');
   
   return (
     <div style={{ 
@@ -53,32 +59,56 @@ function App() {
             <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)} Layout</option>
           ))}
         </select>
-      </div>
-      
-      <div style={{ marginTop: '2rem', border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden', width: '100%' }}>
-        <Graph 
-          data={sampleData}
-          height={600}
-          autoLayout={layout}
-          theme={theme}
-          onNodeClick={(nodeId) => console.log('Node clicked:', nodeId)}
-        />
-      </div>
-      
-      <div style={{ marginTop: '2rem' }}>
-        <h2>Sample Data</h2>
-        <pre style={{ 
-          backgroundColor: theme === 'dark' ? '#1e293b' : '#f1f5f9',
-          padding: '1rem',
-          borderRadius: '4px',
-          overflow: 'auto'
-        }}>
-          {JSON.stringify(sampleData, null, 2)}
-        </pre>
-      </div>
 
-      <MenuCustomizationDemo />
-      <InteractivityDemo />
+        <select 
+          value={activeDemo} 
+          onChange={(e) => setActiveDemo(e.target.value)}
+          style={{ padding: '0.5rem 1rem' }}
+        >
+          <option value="basic">Basic Demo</option>
+          <option value="document">Document Nodes Demo</option>
+          <option value="nodestyles">Node Styles Config Demo</option>
+          <option value="menu">Menu Demo</option>
+          <option value="interactivity">Interactivity Demo</option>
+          <option value="layout">Layout Demo</option>
+          <option value="usesCases">Use Cases Demo</option>
+          <option value="test">Document Drag Test</option>
+        </select>
+      </div>
+      
+      {activeDemo === 'basic' && (
+        <>
+          <div style={{ marginTop: '2rem', border: '1px solid #ccc', borderRadius: '8px', overflow: 'hidden', width: '100%' }}>
+            <Graph 
+              data={sampleData}
+              height={600}
+              autoLayout={layout}
+              theme={theme}
+              onNodeClick={(nodeId) => console.log('Node clicked:', nodeId)}
+            />
+          </div>
+          
+          <div style={{ marginTop: '2rem' }}>
+            <h2>Sample Data</h2>
+            <pre style={{ 
+              backgroundColor: theme === 'dark' ? '#1e293b' : '#f1f5f9',
+              padding: '1rem',
+              borderRadius: '4px',
+              overflow: 'auto'
+            }}>
+              {JSON.stringify(sampleData, null, 2)}
+            </pre>
+          </div>
+        </>
+      )}
+
+      {activeDemo === 'document' && <DocumentNodeDemo />}
+      {activeDemo === 'nodestyles' && <NodeStylesDemo />}
+      {activeDemo === 'menu' && <MenuCustomizationDemo />}
+      {activeDemo === 'interactivity' && <InteractivityDemo />}
+      {activeDemo === 'layout' && <LayoutDemo />}
+      {activeDemo === 'usesCases' && <UseCasesDemo />}
+      {activeDemo === 'test' && <TestDocumentNodeDraggable />}
     </div>
   );
 }

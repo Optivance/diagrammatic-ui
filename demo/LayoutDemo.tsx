@@ -12,8 +12,85 @@ import {
 // Sample data for the demo
 const sampleData = {
   nodes: [
-    { id: 'node1', label: 'Node 1', type: 'default' },
-    { id: 'node2', label: 'Node 2', type: 'primary' },
+    {
+      id: 'node1',
+      label: 'Node 1',
+      type: 'default',
+      sections: [
+        {
+          id: 'sec1',
+          name: 'Profile',
+          items: [
+            {
+              id: 'item1',
+              value: 'Email',
+              metadata: {
+                actions: [
+                  { label: 'Edit', type: 'edit' },
+                  { label: 'Copy', type: 'copy' }
+                ]
+              }
+            },
+            {
+              id: 'item2',
+              value: 'Username',
+              metadata: {
+                actions: [
+                  { label: 'Edit', type: 'edit' }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          id: 'sec2',
+          name: 'Settings',
+          items: [
+            {
+              id: 'item3',
+              value: 'Notifications',
+              metadata: {
+                actions: [
+                  { label: 'Toggle', type: 'toggle' }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 'node2',
+      label: 'Node 2',
+      type: 'primary',
+      sections: [
+        {
+          id: 'sec3',
+          name: 'Tasks',
+          items: [
+            {
+              id: 'item4',
+              value: 'Task 1',
+              metadata: {
+                actions: [
+                  { label: 'Complete', type: 'complete' },
+                  { label: 'Delete', type: 'delete' }
+                ]
+              }
+            },
+            {
+              id: 'item5',
+              value: 'Task 2',
+              metadata: {
+                actions: [
+                  { label: 'Complete', type: 'complete' }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
     { id: 'node3', label: 'Node 3', type: 'default' },
     { id: 'node4', label: 'Node 4', type: 'special' },
     { id: 'node5', label: 'Node 5', type: 'default' },

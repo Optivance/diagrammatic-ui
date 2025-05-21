@@ -1,5 +1,5 @@
 {
-  "name": "diagrammatic-ui",
+  "name": "react-graph-viz",
   "version": "0.1.0",
   "description": "A flexible, customizable graph visualization library for React",
   "type": "module",
@@ -20,14 +20,6 @@
     "demo": "vite --config demo/vite.config.ts",
     "prepare": "npm run build"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/diagrammatic-ui/diagrammatic-ui.git"
-  },
-  "bugs": {
-    "url": "https://github.com/diagrammatic-ui/diagrammatic-ui/issues"
-  },
-  "homepage": "https://github.com/diagrammatic-ui/diagrammatic-ui#readme",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
@@ -60,6 +52,6 @@
     "edges",
     "typescript"
   ],
-  "author": "Diagrammatic UI Team <contact@diagrammaticui.com>",
+  "author": "",
   "license": "MIT"
 }
