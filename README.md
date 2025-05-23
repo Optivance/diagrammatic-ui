@@ -155,7 +155,7 @@ const processFlowData = {
 
 ### Customer Journey Maps
 ```tsx
-const journeyData = {
+const customerJourneyData: GraphData = {
   nodes: [
     { 
       id: 'awareness', 
@@ -168,14 +168,58 @@ const journeyData = {
           name: 'Channels',
           items: [
             { id: 'ch1', value: 'Social Media' },
-            { id: 'ch2', value: 'Search Engines' }
+            { id: 'ch2', value: 'Search Engines' },
+            { id: 'ch3', value: 'Word of Mouth' }
+          ]
+        },
+        {
+          id: 'metrics',
+          name: 'Metrics',
+          items: [
+            { id: 'm1', value: 'New Visitors' },
+            { id: 'm2', value: 'Ad Impressions' },
+            { id: 'm3', value: 'Brand Recognition' }
           ]
         }
       ]
+    },
+    { 
+      id: 'consideration', 
+      name: 'Consideration', 
+      type: 'data',
+      description: 'Customer evaluates options'
+    },
+    { 
+      id: 'purchase', 
+      name: 'Purchase', 
+      type: 'data',
+      description: 'Transaction occurs'
+    },
+    { 
+      id: 'retention', 
+      name: 'Retention', 
+      type: 'data',
+      description: 'Ongoing relationship'
+    },
+    { 
+      id: 'advocacy', 
+      name: 'Advocacy', 
+      type: 'data',
+      description: 'Customer promotes the brand'
     }
-  ]
+  ],
+  edges: [
+    { id: 'e1', source: 'awareness', target: 'consideration', label: 'Research' },
+    { id: 'e2', source: 'consideration', target: 'purchase', label: 'Decision' },
+    { id: 'e3', source: 'purchase', target: 'retention', label: 'Experience' },
+    { id: 'e4', source: 'retention', target: 'advocacy', label: 'Satisfaction' },
+    { id: 'e5', source: 'advocacy', target: 'awareness', type: 'dashed', label: 'Referral' }
+  ],
+  name: 'Customer Journey Map',
+  category: 'journey'
 };
 ```
+![image](https://github.com/user-attachments/assets/6b0e38c7-2c68-46b4-8002-371a70f49923)
 
 ### Network Topology
 ```tsx
@@ -250,6 +294,8 @@ const documentNode = {
 - 🔄 Non-interfering scrolling (content scrolls without affecting canvas zoom)
 
 <!-- Output: Add screenshot of document nodes -->
+![image](https://github.com/user-attachments/assets/7eb02ef9-5d08-4e38-9f95-86680bf009d1)
+
 
 ## 🎨 Interactive Features
 
@@ -294,6 +340,12 @@ Switch between light and dark themes:
   theme="dark" // or "light"
 />
 ```
+Light Theme : 
+![image](https://github.com/user-attachments/assets/7ad6cfb0-acd2-49b4-bd04-4412ae4cd67c)
+Dark Theme:
+![image](https://github.com/user-attachments/assets/4293af1e-bca5-4536-b34d-4a3ec2ca08fc)
+
+
 
 <!-- Output: Add side-by-side comparison of themes -->
 
