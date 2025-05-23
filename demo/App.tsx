@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Graph, GraphData, InteractivityDemo, MenuCustomizationDemo } from '../src';
+import { Graph, GraphData,} from '../src';
+import { InteractivityDemo } from './InteractivityDemo';
+import { MenuCustomizationDemo } from './MenuCustomizationDemo';
 import { LayoutDemo } from './LayoutDemo';
 import { DocumentNodeDemo } from './DocumentNodeDemo';
 import { NodeStylesDemo } from './NodeStylesDemo';
