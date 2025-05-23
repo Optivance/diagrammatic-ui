@@ -340,10 +340,10 @@ Switch between light and dark themes:
   theme="dark" // or "light"
 />
 ```
-Light Theme : 
-![image](https://github.com/user-attachments/assets/7ad6cfb0-acd2-49b4-bd04-4412ae4cd67c)
-Dark Theme:
-![image](https://github.com/user-attachments/assets/4293af1e-bca5-4536-b34d-4a3ec2ca08fc)
+| Light Theme | Dark Theme |
+|-------------|------------|
+| ![Light Theme](https://github.com/user-attachments/assets/7ad6cfb0-acd2-49b4-bd04-4412ae4cd67c) | ![Dark Theme](https://github.com/user-attachments/assets/4293af1e-bca5-4536-b34d-4a3ec2ca08fc) |
+
 
 
 
